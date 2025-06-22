@@ -29,5 +29,5 @@ setup(name='LigPargen',
           'console_scripts': ['ligpargen=ligpargen.ligpargen:main'],
       },
       include_package_data=True,
-      python_requires='==3.7.*',
+#      python_requires='>3.7.*',
       zip_safe=False)
