@@ -131,22 +131,27 @@ def generateRDkitMolecule(ifile, smile, workdir, molname, debug = False):
         done = AllChem.EmbedMolecule(molecule, randomSeed=0xf00d)
 
         if done == -1:
-            
-            from openbabel import pybel
 
-            logger.warning(f'RDkit FAILS to generate the coordinates from the SMILES for {smile}. Trying new RDkit approach...')
+            babel = shutil.which("obabel")
 
-            mymol = pybel.readstring('smi', smile)
-            mymol.make3D()
-            
+            if babel is None:
+                logger.error(f'RDkit FAILS to generate 3D coordinates from SMILES for {smile} and obabel is not found.')
+                exit()
+
+            logger.warning(f'RDkit FAILS to generate the coordinates from the SMILES for {smile}. Trying obabel...')
+
             tmpFile = os.path.join(workdir, 'tmpmol.pdb')
-            mymol.write('pdb', tmpFile, overwrite=True)
-            
-            molecule = Chem.MolFromPDBFile(tmpFile,removeHs=False)
+            subprocess.run(
+                [babel, '-ismi', '-opdb', '-O', tmpFile, '--gen3d'],
+                input=smile.encode(),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+
+            molecule = Chem.MolFromPDBFile(tmpFile, removeHs=False)
 
             os.remove(tmpFile)
-            
-            logger.info(f'3D coordinates generated with PYBEL (openBabel)')
+
+            logger.info('3D coordinates generated with obabel')
 
     else:
 
