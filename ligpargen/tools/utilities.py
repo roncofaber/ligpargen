@@ -141,11 +141,15 @@ def generateRDkitMolecule(ifile, smile, workdir, molname, debug = False):
             logger.warning(f'RDkit FAILS to generate the coordinates from the SMILES for {smile}. Trying obabel...')
 
             tmpFile = os.path.join(workdir, 'tmpmol.pdb')
-            subprocess.run(
+            result = subprocess.run(
                 [babel, '-ismi', '-opdb', '-O', tmpFile, '--gen3d'],
                 input=smile.encode(),
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
+
+            if result.returncode != 0:
+                logger.error(f'obabel failed to generate 3D coordinates for {smile}: {result.stderr.decode().strip()}')
+                exit()
 
             molecule = Chem.MolFromPDBFile(tmpFile, removeHs=False)
 
@@ -178,7 +182,11 @@ def generateRDkitMolecule(ifile, smile, workdir, molname, debug = False):
 
             if babel != None:
 
-                subprocess.run([babel, ifile, "-opdb", "-O", sfile], stdin =subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                result = subprocess.run([babel, ifile, "-opdb", "-O", sfile], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                if result.returncode != 0:
+                    logger.error(f'obabel failed to convert {ifile} to PDB: {result.stderr.decode().strip()}')
+                    exit()
 
                 molecule = Chem.MolFromPDBFile(sfile,removeHs=False)
 
@@ -458,7 +466,7 @@ def generateNewMoleculeWithProperOrder(molecule, atomsIndexLstWithRightOrder):
             resname = residueInfo.GetResidueName()
             atomName = residueInfo.GetName() 
 
-        except:
+        except AttributeError:
 
             element = atom.GetSymbol()
 

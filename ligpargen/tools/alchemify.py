@@ -541,7 +541,7 @@ def generateABbondingTerms(atomsAB, bondingList_AB, bondingList_B, AtoBserialCor
                             bondTermA.typeFinal = bondB.typeInitial
 
 
-            except:
+            except KeyError:
 
                 if bondTermA.__class__.__name__=='Bond': bondTermA.R0_B = 0.3
 
@@ -708,7 +708,7 @@ def generateABAtoms(moleculeAB, moleculeB, BtoAIndexCorrespondency, BtoAserialCo
 
             atomA.type_gmx_B = 'opls_'+str(atomA.typeB)
 
-        except:
+        except KeyError:
 
             # NOT matched atom in A molecule so ..... future dummy
 
@@ -778,6 +778,6 @@ def updateParentOfB_Molecule(serialB,BtoA):
 
         print(serialB, BtoA)
 
-        raise KeyError('No key bar in dict foo') from None
+        raise KeyError(f'Serial {serialB} not found in B-to-A mapping') from None
 
     return newSerial
