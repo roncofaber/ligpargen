@@ -408,18 +408,21 @@ class LigParGen():
             print("\n       ERROR!    Open Babel is not installed on your work station.\n")
             exit()
 
-        csh = shutil.which("csh")
-        if csh==None: 
-            print("\n       ERROR!    csh is not installed on your work station.\n")
-            exit()
+        has_container = bool(os.environ.get("BOSS_CONTAINER"))
 
-        try:  os.environ["BOSSdir"]
-        except KeyError: 
+        if not has_container:
+            csh = shutil.which("csh")
+            if csh==None:
+                print("\n       ERROR!    csh is not installed on your work station.\n")
+                exit()
+
+        if not os.environ.get("BOSSdir") and not has_container:
 
             print('''\n         ERROR!    BOSS is not found on your work station. $BOSSdir path is not set.
-    BOSS software can be downloaded for free from  ---> http://zarbi.chem.yale.edu/software.html 
+    BOSS software can be downloaded for free from  ---> http://zarbi.chem.yale.edu/software.html
 
         DO NOT forget to export the BOSSdir path (export BOSSdir=/path/boss/intalled)
+        Alternatively, set $BOSS_CONTAINER to a Docker image or Singularity .sif path.
             ''')
             exit()
 
