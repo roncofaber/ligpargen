@@ -19,7 +19,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def generatePARFile(cgen, charge, estimation, generateCharges):
+def generatePARFile(cgen, charge, estimation, generateCharges, filename='parFile.par'):
    """
    Generate a BOSS PAR file (parameters files)
 
@@ -29,10 +29,12 @@ def generatePARFile(cgen, charge, estimation, generateCharges):
        Charge method
    charge : int
        Formal charge of the molecule
-   estimation : str  
+   estimation : str
        BOSS parameter
    generateCharges : bool
        If True, charges are computed by BOSS
+   filename : str, optional
+       Output filename, by default 'parFile.par'
    """
 
    line = '         0.00  0  0  0'
@@ -41,15 +43,15 @@ def generatePARFile(cgen, charge, estimation, generateCharges):
 
       line = 'AM1SCM1L 1.14  0  0  0'  # default LBCC
 
-      if cgen=='CM1A': 
-         
+      if cgen=='CM1A':
+
          if charge == 0: line = 'AM1SCM1A 1.14  0  0  0'
          else: line = 'AM1SCM1A {:4.2f}{:3d}{:3d}{:3d}'.format(1.0,charge,charge,charge)
 
 
    newParFile  = scriptPAR.replace('aaaa', line).replace('bbbbb', estimation)
 
-   with open('parFile.par', 'w') as f: f.write(newParFile)
+   with open(filename, 'w') as f: f.write(newParFile)
 
 
 def generateCMDFile(mode, outName, cmdFileName='bosscmd', MCsteps=000000, alchemicalTransformation = False):
@@ -130,6 +132,82 @@ def generateCMDFEPFile(cmdFileName, workdir, forward= True):
 
    with open(os.path.join(workdir, cmdFileName),'w') as f: f.write(newScriptCMD)
 
+def _getBossCommand(workdir, checkrun):
+   """
+   Determine how to invoke BOSS. Returns the shell command string to run run_boss.csh.
+
+   Priority: native $BOSSdir > $BOSS_CONTAINER (Singularity .sif or Docker image).
+   """
+
+   bossdir_env = os.environ.get('BOSSdir', '')
+
+   if bossdir_env:
+
+      bossExe = os.path.join(bossdir_env, 'BOSS')
+
+      if not os.path.isfile(bossExe):
+         logger.error(f'BOSS executable not found at {bossExe}. Check your $BOSSdir installation.')
+         exit()
+
+      prefix = 'source ~/.bashrc; ' if not checkrun else ''
+
+      return prefix + 'csh run_boss.csh'
+
+   container = os.environ.get('BOSS_CONTAINER', '')
+
+   if container:
+
+      abs_workdir = os.path.abspath(workdir)
+
+      if container.endswith('.sif') or container.endswith('.simg'):
+
+         runner = shutil.which('apptainer') or shutil.which('singularity')
+
+         if runner is None:
+            logger.error('$BOSS_CONTAINER points to a .sif but neither apptainer nor singularity found in PATH.')
+            exit()
+
+         logger.info(f'Running BOSS via Singularity: {container}')
+         return f'{runner} exec -B {abs_workdir}:/workspace --pwd /workspace {container} csh run_boss.csh'
+
+      else:
+
+         if shutil.which('docker') is None:
+            logger.error('$BOSS_CONTAINER is set but docker is not found in PATH.')
+            exit()
+
+         logger.info(f'Running BOSS via Docker: {container}')
+         return f'docker run --rm -v {abs_workdir}:/workspace -w /workspace {container} csh run_boss.csh'
+
+   logger.error(
+      'BOSS is not available. Either:\n'
+      '  - Set $BOSSdir to your BOSS installation directory (native), or\n'
+      '  - Set $BOSS_CONTAINER to a Docker image name or Singularity .sif path'
+   )
+   exit()
+
+
+def _generateWrapperScript(steps):
+   """
+   Write run_boss.csh that runs all BOSS steps sequentially.
+
+   Parameters
+   ----------
+   steps : list of (par_filename, cmd_filename)
+       Ordered list of PAR/CMD file pairs to execute.
+   """
+
+   lines = ['#!/bin/csh\n\n']
+
+   for par, cmd in steps:
+      lines.append(f'cp {par} parFile.par\n')
+      lines.append(f'csh {cmd}\n')
+      lines.append('if ($status != 0) exit $status\n\n')
+
+   with open('run_boss.csh', 'w') as f:
+      f.writelines(lines)
+
+
 def run(zmatName, cgen, opt, charge, molname, workdir, debug, checkrun = True):
    """
    Run BOSS different times to generate Bonds, Angles, Dihedrals, Charges and VdW OPLSAA parameters 
@@ -159,69 +237,60 @@ def run(zmatName, cgen, opt, charge, molname, workdir, debug, checkrun = True):
        
    logger.info('Running BOSS')
 
-   bossExe = os.path.join(os.environ.get('BOSSdir', ''), 'BOSS')
-   if not os.environ.get('BOSSdir'):
-      logger.error('$BOSSdir environment variable is not set. Please install BOSS and set $BOSSdir.')
-      exit()
-   if not os.path.isfile(bossExe):
-      logger.error(f'BOSS executable not found at {bossExe}. Please check your $BOSSdir installation.')
-      exit()
+   command = _getBossCommand(workdir, checkrun)
 
    with utilities.changedir(workdir):
 
-      # Compute molecule charges
+      # Pre-generate all PAR and CMD files, then run BOSS once
 
-      generatePARFile(cgen, charge, 'NEWZM', True)
+      steps = []
 
-      generateCMDFile('211', 'cout')
+      generatePARFile(cgen, charge, 'NEWZM', True,  'parFile_1.par')
+      generateCMDFile('211', 'cout', 'bosscmd_1')
+      steps.append(('parFile_1.par', 'bosscmd_1'))
+
+      generatePARFile(cgen, charge, 'FULLM', False, 'parFile_2.par')
+      generateCMDFile('711', 'out',  'bosscmd_2')
+      steps.append(('parFile_2.par', 'bosscmd_2'))
+
+      generatePARFile(cgen, charge, 'NEWZM', True,  'parFile_3.par')
+      generateCMDFile('211', 'out',  'bosscmd_3')
+      steps.append(('parFile_3.par', 'bosscmd_3'))
+
+      for i in range(opt):
+         n = 4 + i
+         logger.info(f'Queuing BOSS optimization {i + 1}')
+         generatePARFile(cgen, charge, 'NEWZM', False, f'parFile_{n}.par')
+         generateCMDFile('211', 'out', f'bosscmd_{n}')
+         steps.append((f'parFile_{n}.par', f'bosscmd_{n}'))
 
       shutil.copyfile(zmatName, 'optzmat')
 
-      bossdir = ''
+      _generateWrapperScript(steps)
 
-      if checkrun == False: bossdir = 'source ~/.bashrc;'
-
-      bossrun = subprocess.run(bossdir+'csh bosscmd', shell=True, capture_output=True, text=True, check=checkrun)
-
-      # Compute internal parameters
-
-      generatePARFile(cgen, charge, 'FULLM', False)
-
-      generateCMDFile('711', 'out')
-
-      subprocess.run(bossdir+'csh bosscmd',shell=True, capture_output=True, text=True, check=checkrun)
-
-      generatePARFile(cgen, charge, 'NEWZM', True)
-
-      generateCMDFile('211', 'out')
-
-      subprocess.run(bossdir+'csh bosscmd',shell=True, capture_output=True, text=True, check=checkrun)
-
-      # Optimize molecule
-
-      for iter in range(opt):
-            
-         logger.info('Running BOSS optimization ... '+str(iter+1))
-            
-         generatePARFile(cgen, charge, 'NEWZM', False)
-
-         generateCMDFile('211', 'out')
-
-         subprocess.run(bossdir+'csh bosscmd',shell=True, capture_output=True, text=True, check=checkrun)
+      result = subprocess.run(command, shell=True, capture_output=True, text=True, check=checkrun)
 
       shutil.copyfile('optzmat', zmatName)
 
       pdbFile, outFile = getOutputFilesNames(molname, workdir)
 
       if not os.path.isfile('plt.pdb'):
-         logger.error('BOSS did not produce plt.pdb — the BOSS run likely failed. Check that $BOSSdir/BOSS runs correctly.')
+         logger.error('BOSS did not produce plt.pdb — the BOSS run likely failed.')
+         if result.stderr:
+            logger.error('BOSS stderr: %s', result.stderr.strip())
          exit()
 
       shutil.copyfile('plt.pdb', pdbFile)
 
-   if not debug: 
-      for bossFile in ['optzmat', 'parFile.par', 'cout', 'bosscmd', 'plt.pdb', 'sum']: 
-         os.remove(os.path.join(workdir, bossFile))
+   if not debug:
+      n_steps = 3 + opt
+      static_files = ['optzmat', 'parFile.par', 'cout', 'plt.pdb', 'sum', 'run_boss.csh']
+      numbered_files = [f'parFile_{i+1}.par' for i in range(n_steps)] + \
+                       [f'bosscmd_{i+1}' for i in range(n_steps)]
+      for bossFile in static_files + numbered_files:
+         path = os.path.join(workdir, bossFile)
+         if os.path.exists(path):
+            os.remove(path)
 
    return outFile, pdbFile
 
