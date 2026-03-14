@@ -206,11 +206,11 @@ class LigParGen():
 
         if self.alchemicalTransformation:
 
-            if self.debug: 
-                os.system(f'mv {outFile} {outFile}_A')
+            if self.debug:
+                shutil.move(outFile, outFile+'_A')
                 molAname = os.path.join(self.workdir, molnameA+".z")
                 molAname_bakA = os.path.join(self.workdir, molnameA+"_A.z")
-                os.system(f'cp {molAname} {molAname_bakA}')
+                shutil.copy2(molAname, molAname_bakA)
     
             molnameB = utilities.guessMoleculeName(self.ifileB, self.molname, 'B')
 
@@ -255,7 +255,7 @@ class LigParGen():
                 if molnameAB != molnameB: os.remove(zmatNameB)
                 if molnameAB != molnameA: os.remove(zmatName)
 
-            if self.debug: os.system(f'mv {outFileB} {outFileB}_B')
+            if self.debug: shutil.move(outFileB, outFileB+'_B')
 
         else: self.molname = molnameA
 

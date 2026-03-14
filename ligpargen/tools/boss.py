@@ -44,7 +44,7 @@ def generatePARFile(cgen, charge, estimation, generateCharges):
       if cgen=='CM1A': 
          
          if charge == 0: line = 'AM1SCM1A 1.14  0  0  0'
-         else: line = 'AM1SCM1A {:4.2f}{:3d}{:3d}{:3d}'.format(1.0,charge,charge,charge,charge)
+         else: line = 'AM1SCM1A {:4.2f}{:3d}{:3d}{:3d}'.format(1.0,charge,charge,charge)
 
 
    newParFile  = scriptPAR.replace('aaaa', line).replace('bbbbb', estimation)
@@ -158,7 +158,15 @@ def run(zmatName, cgen, opt, charge, molname, workdir, debug, checkrun = True):
    """
        
    logger.info('Running BOSS')
-       
+
+   bossExe = os.path.join(os.environ.get('BOSSdir', ''), 'BOSS')
+   if not os.environ.get('BOSSdir'):
+      logger.error('$BOSSdir environment variable is not set. Please install BOSS and set $BOSSdir.')
+      exit()
+   if not os.path.isfile(bossExe):
+      logger.error(f'BOSS executable not found at {bossExe}. Please check your $BOSSdir installation.')
+      exit()
+
    with utilities.changedir(workdir):
 
       # Compute molecule charges
@@ -204,6 +212,10 @@ def run(zmatName, cgen, opt, charge, molname, workdir, debug, checkrun = True):
       shutil.copyfile('optzmat', zmatName)
 
       pdbFile, outFile = getOutputFilesNames(molname, workdir)
+
+      if not os.path.isfile('plt.pdb'):
+         logger.error('BOSS did not produce plt.pdb — the BOSS run likely failed. Check that $BOSSdir/BOSS runs correctly.')
+         exit()
 
       shutil.copyfile('plt.pdb', pdbFile)
 

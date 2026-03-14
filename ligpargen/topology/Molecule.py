@@ -535,8 +535,10 @@ class Molecule(object):
             Additional bonds list
         """
 
-        additionalBondInfo = re.search(r'Additional Bonds follow(.*?)Harmonic Constraints follow', 
-                        zmatData, re.DOTALL).group().splitlines()[1:-1]
+        match = re.search(r'Additional Bonds follow(.*?)Harmonic Constraints follow', zmatData, re.DOTALL)
+        if match is None:
+            raise ValueError("BOSS zmat is missing 'Additional Bonds follow' section")
+        additionalBondInfo = match.group().splitlines()[1:-1]
         additionalBondInfo = ['_'.join(ele.split()) for ele in additionalBondInfo ]
 
         try:
@@ -553,7 +555,7 @@ class Molecule(object):
             
             
 
-        except:
+        except (AttributeError, IndexError):
 
             bondsFile = []
 
@@ -597,7 +599,10 @@ class Molecule(object):
         """
 
     
-        additionalAnglesInfo = re.search(r'Additional Bond Angles follow(.*?)Variable Dihedrals follow', zmatData, re.DOTALL).group().splitlines()[1:-1]
+        match = re.search(r'Additional Bond Angles follow(.*?)Variable Dihedrals follow', zmatData, re.DOTALL)
+        if match is None:
+            raise ValueError("BOSS zmat is missing 'Additional Bond Angles follow' section")
+        additionalAnglesInfo = match.group().splitlines()[1:-1]
         additionalAnglesInfo = ['_'.join(ele.split()) for ele in additionalAnglesInfo ]
 
 
@@ -613,7 +618,7 @@ class Molecule(object):
                 not 'Synonym' in angle and
                 not 'CHECK' in angle]
 
-        except:
+        except (AttributeError, IndexError):
 
             anglesFile = []
 
@@ -661,10 +666,16 @@ class Molecule(object):
             Additional torsions list
         """
 
-        zmatTorsionInfoVariables = re.search(r'Variable Dihedrals follow(.*?)Additional Dihedrals follow', zmatData, re.DOTALL).group().splitlines()[1:-1]
+        match = re.search(r'Variable Dihedrals follow(.*?)Additional Dihedrals follow', zmatData, re.DOTALL)
+        if match is None:
+            raise ValueError("BOSS zmat is missing 'Variable Dihedrals follow' section")
+        zmatTorsionInfoVariables = match.group().splitlines()[1:-1]
         zmatTorsionInfoVariables = [ele.split() for ele in zmatTorsionInfoVariables ]
 
-        zmatTorsionInfoAditional = re.search(r'Additional Dihedrals follow(.*?)Domain Definitions follow', zmatData, re.DOTALL).group().splitlines()[1:-1]
+        match = re.search(r'Additional Dihedrals follow(.*?)Domain Definitions follow', zmatData, re.DOTALL)
+        if match is None:
+            raise ValueError("BOSS zmat is missing 'Additional Dihedrals follow' section")
+        zmatTorsionInfoAditional = match.group().splitlines()[1:-1]
         zmatTorsionInfoAditional = [ele.split() for ele in zmatTorsionInfoAditional ]
 
         try:
@@ -672,7 +683,7 @@ class Molecule(object):
             TorsionsFile = re.search(r'  Angle    Atom  I Type F    V1        V2        V3        V4 (.*?)                Bond Stretching Parameters', outfileData, re.DOTALL).group().splitlines()[1:-1]
             TorsionsFile = [angle[:100].split() for angle in TorsionsFile if not len(angle)==0 and not 'Using' in angle]
 
-        except:
+        except (AttributeError, IndexError):
 
             TorsionsFile = []
 
