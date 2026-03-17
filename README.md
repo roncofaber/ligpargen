@@ -35,16 +35,42 @@ LigParGen requires the free BOSS software to generate the OPLSAA parameters.
 
 BOSS is compiled for linux using 32 bits libraries so it can not run in windows using WSL. Alternatively, you can use a virtual machine in windows such as virtualBox to install a linux distro (ubuntu, centos, ...) and run LigParGen.
 
-1.1 - Set the BOSSdir enviromental variable:
+1.1 - Set the `BOSSdir` environment variable to your BOSS installation directory:
 
-  - bashrc
-  
+  - bash
+
             export BOSSdir=PATH_TO_BOSS_DIRECTORY
-  - cshrc
-        
+  - csh/tcsh
+
             setenv BOSSdir PATH_TO_BOSS_DIRECTORY
 
-    **TIP:** add this command line in your ~/.bashrc or ~/.cshrc file.
+    **TIP:** add this line to your `~/.bashrc` or `~/.cshrc`.
+
+1.2 - **Alternative: run BOSS via a container (Docker or Apptainer/Singularity)**
+
+    Because BOSS is a 32-bit binary it can be tricky to run on modern systems (especially WSL on Windows).
+    The [boss-container](https://github.com/roncofaber/boss-container) repository provides a pre-configured
+    Docker/Apptainer image that bundles all required 32-bit libraries.
+
+    LigParGen selects the execution mode based on the value of `$BOSSdir`:
+
+    | `$BOSSdir` value | Execution mode |
+    |---|---|
+    | A directory path | Native BOSS (requires `csh` on the host) |
+    | A path ending in `.sif` / `.simg` | Apptainer/Singularity container |
+    | A Docker image name | Docker container |
+
+    **Docker (local development):**
+
+        # build the image (see boss-container repo)
+        export BOSSdir=boss-container:latest
+
+    **Apptainer/Singularity (HPC clusters):**
+
+        export BOSSdir=/path/to/boss-container.sif
+
+    After setting `$BOSSdir` to the container image, run `ligpargen` exactly as you would with a native
+    BOSS installation — no other changes are needed.
 
 2 - Download and install conda (anaconda or minicoda):  
 

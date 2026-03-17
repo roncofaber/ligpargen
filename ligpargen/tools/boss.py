@@ -136,14 +136,30 @@ def _getBossCommand(workdir, checkrun):
    """
    Determine how to invoke BOSS. Returns the shell command string to run run_boss.csh.
 
-   Priority: native $BOSSdir > $BOSS_CONTAINER (Singularity .sif or Docker image).
+   $BOSSdir controls the mode:
+     - Directory containing the BOSS binary  → native execution via csh
+     - Path to a .sif / .simg file           → Singularity container
+     - Anything else                          → Docker image name
+
+   For container modes, $BOSS_EXEC_DIR sets the BOSS installation path *inside*
+   the container (default: /boss).
    """
 
-   bossdir_env = os.environ.get('BOSSdir', '')
+   bossdir = os.environ.get('BOSSdir', '')
 
-   if bossdir_env:
+   if not bossdir:
+      logger.error(
+         'BOSS is not available. Set $BOSSdir to:\n'
+         '  - your BOSS installation directory (native), or\n'
+         '  - a Singularity .sif image path, or\n'
+         '  - a Docker image name'
+      )
+      exit()
 
-      bossExe = os.path.join(bossdir_env, 'BOSS')
+   # Native: directory containing the BOSS binary
+   if os.path.isdir(bossdir):
+
+      bossExe = os.path.join(bossdir, 'BOSS')
 
       if not os.path.isfile(bossExe):
          logger.error(f'BOSS executable not found at {bossExe}. Check your $BOSSdir installation.')
@@ -153,38 +169,33 @@ def _getBossCommand(workdir, checkrun):
 
       return prefix + 'csh run_boss.csh'
 
-   container = os.environ.get('BOSS_CONTAINER', '')
+   abs_workdir = os.path.abspath(workdir)
+   internal_bossdir = os.environ.get('BOSS_EXEC_DIR', '/boss')
 
-   if container:
+   # Singularity container (.sif / .simg)
+   if bossdir.endswith('.sif') or bossdir.endswith('.simg'):
 
-      abs_workdir = os.path.abspath(workdir)
+      if not os.path.isfile(bossdir):
+         logger.error(f'Singularity image not found at {bossdir}.')
+         exit()
 
-      if container.endswith('.sif') or container.endswith('.simg'):
+      runner = shutil.which('apptainer') or shutil.which('singularity')
 
-         runner = shutil.which('apptainer') or shutil.which('singularity')
+      if runner is None:
+         logger.error('$BOSSdir points to a .sif but neither apptainer nor singularity found in PATH.')
+         exit()
 
-         if runner is None:
-            logger.error('$BOSS_CONTAINER points to a .sif but neither apptainer nor singularity found in PATH.')
-            exit()
+      logger.info(f'Running BOSS via Singularity: {bossdir}')
+      return (f'{runner} exec --env BOSSdir={internal_bossdir}'
+              f' -B {abs_workdir}:/workspace --pwd /workspace {bossdir} csh run_boss.csh')
 
-         logger.info(f'Running BOSS via Singularity: {container}')
-         return f'{runner} exec -B {abs_workdir}:/workspace --pwd /workspace {container} csh run_boss.csh'
+   # Docker image
+   if shutil.which('docker') is None:
+      logger.error('$BOSSdir looks like a Docker image but docker is not found in PATH.')
+      exit()
 
-      else:
-
-         if shutil.which('docker') is None:
-            logger.error('$BOSS_CONTAINER is set but docker is not found in PATH.')
-            exit()
-
-         logger.info(f'Running BOSS via Docker: {container}')
-         return f'docker run --rm -v {abs_workdir}:/workspace -w /workspace {container} csh run_boss.csh'
-
-   logger.error(
-      'BOSS is not available. Either:\n'
-      '  - Set $BOSSdir to your BOSS installation directory (native), or\n'
-      '  - Set $BOSS_CONTAINER to a Docker image name or Singularity .sif path'
-   )
-   exit()
+   logger.info(f'Running BOSS via Docker: {bossdir}')
+   return f'docker run --rm -v {abs_workdir}:/workspace -w /workspace {bossdir} csh run_boss.csh'
 
 
 def _generateWrapperScript(steps):
