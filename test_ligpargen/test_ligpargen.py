@@ -57,7 +57,7 @@ class test_ligpargen(unittest.TestCase):
 
         golden_mol1_atomNames = ['C', 'C', 'C', 'C', 'C', 'C', 'H', 'H', 'H', 'H', 'H', 'H']
         golden_mol1_atomAtomicnumber = [6, 6, 6, 6, 6, 6, 1, 1, 1, 1, 1, 1]
-        golden_mol1_atomPositions = [[1.298, 0.393, -0.042], [0.304, 1.343, -0.014], [1.021, -0.963, -0.029], [-0.299, -1.351, 0.014], [-1.306, -0.403, 0.043], [-1.031, 0.95, 0.029], [-0.503, -2.402, 0.024], [-2.338, -0.724, 0.077], [-1.83, 1.679, 0.052], [0.506, 2.412, -0.024], [2.329, 0.722, -0.076], [1.849, -1.656, -0.053]]
+        golden_mol1_atomPositions = [[-0.293, -1.335, -0.009], [-1.335, -0.419, 0.015], [-1.015, 0.939, 0.024], [0.318, 1.359, 0.009], [1.326, 0.415, -0.015], [1.023, -0.934, -0.024], [-0.508, -2.398, -0.016], [-2.365, -0.75, 0.027], [-1.828, 1.657, 0.042], [0.52, 2.433, 0.016], [2.363, 0.723, -0.027], [1.794, -1.691, -0.042]]
 
         golden_newIndexToOriginalIndex = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11}
         golden_atomsNameOriginal = []
@@ -74,9 +74,9 @@ class test_ligpargen(unittest.TestCase):
     def test_bonds(self):
 
         bondsVariables = [[bond.atomA.serial, bond.atomB.serial] for bond in self.molecule_benzene_fromRDkit.bondsVariable]
-        golden_mol1_bondsVariables = [[5, 4], [6, 4], [7, 6], [8, 7], [9, 8], [10, 7], [11, 8], [12, 9], [13, 5], [14, 4], [15, 6]]
+        golden_mol1_bondsVariables = [[5, 4], [6, 5], [7, 6], [8, 7], [9, 8], [10, 4], [11, 5], [12, 6], [13, 7], [14, 8], [15, 9]]
 
-        golden_mol1_bondsAdditionals = [[9, 5]]
+        golden_mol1_bondsAdditionals = [[9, 4]]
         bondsAdditionals = [[bond.atomA.serial, bond.atomB.serial] for bond in self.molecule_benzene_fromRDkit.bondsAdditional]
 
 
@@ -104,10 +104,10 @@ class test_ligpargen(unittest.TestCase):
     def test_angles(self):
 
         anglesVariables = [[angle.atomA.serial, angle.atomB.serial, angle.atomC.serial] for angle in self.molecule_benzene_fromRDkit.anglesVariable]
-        golden_mol1_anglesVariables = [[6, 4, 5], [7, 6, 4], [8, 7, 6], [9, 8, 7], [10, 7, 6], [11, 8, 7], [12, 9, 8], [13, 5, 4], [14, 4, 5], [15, 6, 4]]
+        golden_mol1_anglesVariables = [[6, 5, 4], [7, 6, 5], [8, 7, 6], [9, 8, 7], [10, 4, 5], [11, 5, 4], [12, 6, 5], [13, 7, 6], [14, 8, 7], [15, 9, 8]]
 
         anglesAdditionals = [[angle.atomA.serial, angle.atomB.serial, angle.atomC.serial] for angle in self.molecule_benzene_fromRDkit.anglesAdditional]
-        golden_mol1_anglesAdditionals = [[6, 4, 14], [7, 6, 15], [8, 7, 10], [9, 8, 11], [9, 5, 4], [9, 5, 13], [12, 9, 5], [5, 9, 8]]
+        golden_mol1_anglesAdditionals = [[5, 4, 9], [6, 5, 11], [7, 6, 12], [8, 7, 13], [9, 8, 14], [9, 4, 10], [15, 9, 4], [4, 9, 8]]
 
         self.assertEqual(anglesVariables, golden_mol1_anglesVariables)
         self.assertEqual(anglesAdditionals, golden_mol1_anglesAdditionals)
@@ -115,10 +115,10 @@ class test_ligpargen(unittest.TestCase):
     def test_dihedrals(self):
         
         dihedralsVariables = [[angle.atomA.serial, angle.atomB.serial, angle.atomC.serial, angle.atomD.serial] for angle in self.molecule_benzene_fromRDkit.torsionsVariable]
-        golden_mol1_dihedralsVariables = [[7, 6, 4, 5], [8, 7, 6, 4], [9, 8, 7, 6], [10, 7, 6, 4], [11, 8, 7, 6], [12, 9, 8, 7], [13, 5, 4, 6], [14, 4, 5, 9], [15, 6, 4, 5]]
+        golden_mol1_dihedralsVariables = [[7, 6, 5, 4], [8, 7, 6, 5], [9, 8, 7, 6], [10, 4, 5, 6], [11, 5, 4, 9], [12, 6, 5, 4], [13, 7, 6, 5], [14, 8, 7, 6], [15, 9, 8, 7]]
 
         dihedraslAdditionals = [[angle.atomA.serial, angle.atomB.serial, angle.atomC.serial, angle.atomD.serial] for angle in self.molecule_benzene_fromRDkit.torsionsAdditional]
-        golden_mol1_dihedralsAdditionals = [[6, 4, 5, 9], [7, 6, 4, 14], [8, 7, 6, 15], [9, 8, 7, 10], [10, 7, 6, 15], [10, 7, 8, 11], [11, 8, 9, 5], [11, 8, 9, 12], [12, 9, 5, 4], [12, 9, 5, 13], [13, 5, 4, 14], [13, 5, 9, 8], [14, 4, 6, 15], [5, 9, 8, 7], [8, 9, 5, 4], [14, 6, 4, 5], [13, 9, 5, 4], [15, 7, 6, 4], [10, 8, 7, 6], [11, 9, 8, 7], [12, 5, 9, 8]]
+        golden_mol1_dihedralsAdditionals = [[5, 4, 9, 8], [5, 4, 9, 15], [6, 5, 4, 9], [7, 6, 5, 11], [8, 7, 6, 12], [9, 8, 7, 13], [10, 4, 5, 11], [10, 4, 9, 8], [10, 4, 9, 15], [11, 5, 6, 12], [12, 6, 7, 13], [13, 7, 8, 14], [14, 8, 9, 4], [14, 8, 9, 15], [4, 9, 8, 7], [10, 9, 4, 5], [11, 6, 5, 4], [12, 7, 6, 5], [13, 8, 7, 6], [14, 9, 8, 7], [15, 4, 9, 8]]
 
         self.assertEqual(dihedralsVariables, golden_mol1_dihedralsVariables)
         self.assertEqual(dihedraslAdditionals, golden_mol1_dihedralsAdditionals)
@@ -412,7 +412,7 @@ class test_ligpargen(unittest.TestCase):
 
         BtoAserialCorrespondency, umatchB = alchemify.alignMolecules(self.benzene_RDkit, phenol_RDkit, self.workdir, self.debug)
         
-        golden_BtoAserialCorrespondency = {0: 0, 1: 1, 6: 5, 5: 4, 3: 3, 2: 2, 10: 11, 11: 6, 7: 7, 8: 8, 9: 9, 4: 10}
+        golden_BtoAserialCorrespondency = {0: 0, 1: 1, 6: 2, 5: 3, 3: 4, 2: 5, 10: 11, 11: 10, 7: 9, 8: 8, 9: 7, 4: 6}
         golden_umatch = [12]
 
         self.assertEqual(BtoAserialCorrespondency, golden_BtoAserialCorrespondency)

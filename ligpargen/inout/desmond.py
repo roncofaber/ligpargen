@@ -362,7 +362,7 @@ def getExclusionList(molecule):
 
     for torsion in torsions: pairSet.add(tuple(sorted([torsion.atomA.serialOriginal-serialShift, torsion.atomD.serialOriginal-serialShift])))
 
-    return list(pairSet)
+    return sorted(pairSet)
 
 def getFileNames(molname, workdir):
     """Return output file names
