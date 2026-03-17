@@ -422,8 +422,10 @@ class LigParGen():
             ''')
             exit()
 
-        # csh is only required on the host for native (directory) mode
-        if os.path.isdir(bossdir):
+        # csh is only required on the host for native (directory) mode;
+        # .sif/.simg paths are containers even if they are sandbox directories
+        is_container = bossdir.endswith('.sif') or bossdir.endswith('.simg')
+        if os.path.isdir(bossdir) and not is_container:
             csh = shutil.which("csh")
             if csh is None:
                 print("\n       ERROR!    csh is not installed on your work station.\n")

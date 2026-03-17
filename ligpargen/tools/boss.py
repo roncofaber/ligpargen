@@ -156,26 +156,14 @@ def _getBossCommand(workdir, checkrun):
       )
       exit()
 
-   # Native: directory containing the BOSS binary
-   if os.path.isdir(bossdir):
-
-      bossExe = os.path.join(bossdir, 'BOSS')
-
-      if not os.path.isfile(bossExe):
-         logger.error(f'BOSS executable not found at {bossExe}. Check your $BOSSdir installation.')
-         exit()
-
-      prefix = 'source ~/.bashrc; ' if not checkrun else ''
-
-      return prefix + 'csh run_boss.csh'
-
    abs_workdir = os.path.abspath(workdir)
    internal_bossdir = os.environ.get('BOSS_EXEC_DIR', '/boss')
 
-   # Singularity container (.sif / .simg)
+   # Singularity container (.sif / .simg) — check extension first so that
+   # sandbox-format images (which are directories) are handled correctly
    if bossdir.endswith('.sif') or bossdir.endswith('.simg'):
 
-      if not os.path.isfile(bossdir):
+      if not os.path.exists(bossdir):
          logger.error(f'Singularity image not found at {bossdir}.')
          exit()
 
@@ -188,6 +176,19 @@ def _getBossCommand(workdir, checkrun):
       logger.info(f'Running BOSS via Singularity: {bossdir}')
       return (f'{runner} exec --env BOSSdir={internal_bossdir}'
               f' -B {abs_workdir}:/workspace --pwd /workspace {bossdir} csh run_boss.csh')
+
+   # Native: directory containing the BOSS binary
+   if os.path.isdir(bossdir):
+
+      bossExe = os.path.join(bossdir, 'BOSS')
+
+      if not os.path.isfile(bossExe):
+         logger.error(f'BOSS executable not found at {bossExe}. Check your $BOSSdir installation.')
+         exit()
+
+      prefix = 'source ~/.bashrc; ' if not checkrun else ''
+
+      return prefix + 'csh run_boss.csh'
 
    # Docker image
    if shutil.which('docker') is None:
