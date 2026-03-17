@@ -37,40 +37,40 @@ BOSS is compiled for linux using 32 bits libraries so it can not run in windows 
 
 1.1 - Set the `BOSSdir` environment variable to your BOSS installation directory:
 
-  - bash
+- bash:
 
-            export BOSSdir=PATH_TO_BOSS_DIRECTORY
-  - csh/tcsh
+        export BOSSdir=PATH_TO_BOSS_DIRECTORY
 
-            setenv BOSSdir PATH_TO_BOSS_DIRECTORY
+- csh/tcsh:
 
-    **TIP:** add this line to your `~/.bashrc` or `~/.cshrc`.
+        setenv BOSSdir PATH_TO_BOSS_DIRECTORY
+
+**TIP:** add this line to your `~/.bashrc` or `~/.cshrc`.
 
 1.2 - **Alternative: run BOSS via a container (Docker or Apptainer/Singularity)**
 
-    Because BOSS is a 32-bit binary it can be tricky to run on modern systems (especially WSL on Windows).
-    The [boss-container](https://github.com/roncofaber/boss-container) repository provides a pre-configured
-    Docker/Apptainer image that bundles all required 32-bit libraries.
+Because BOSS is a 32-bit binary it can be tricky to run on modern systems (especially WSL on Windows).
+The [boss-container](https://github.com/roncofaber/boss-container) repository provides a pre-configured
+Docker/Apptainer image that bundles all required 32-bit libraries.
 
-    LigParGen selects the execution mode based on the value of `$BOSSdir`:
+LigParGen selects the execution mode based on the value of `$BOSSdir`:
 
-    | `$BOSSdir` value | Execution mode |
-    |---|---|
-    | A directory path | Native BOSS (requires `csh` on the host) |
-    | A path ending in `.sif` / `.simg` | Apptainer/Singularity container |
-    | A Docker image name | Docker container |
+| `$BOSSdir` value | Execution mode |
+|---|---|
+| A directory path | Native BOSS (requires `csh` on the host) |
+| A path ending in `.sif` / `.simg` | Apptainer/Singularity container |
+| A Docker image name | Docker container |
 
-    **Docker (local development):**
+**Docker (local development):**
 
-        # build the image (see boss-container repo)
-        export BOSSdir=boss-container:latest
+    export BOSSdir=boss-container:latest
 
-    **Apptainer/Singularity (HPC clusters):**
+**Apptainer/Singularity (HPC clusters):**
 
-        export BOSSdir=/path/to/boss-container.sif
+    export BOSSdir=/path/to/boss-container.sif
 
-    After setting `$BOSSdir` to the container image, run `ligpargen` exactly as you would with a native
-    BOSS installation — no other changes are needed.
+After setting `$BOSSdir` to the container image, run `ligpargen` exactly as you would with a native
+BOSS installation — no other changes are needed.
 
 2 - Download and install conda (anaconda or minicoda):  
 
@@ -84,10 +84,11 @@ or
 
     conda create --name py37 python=3.7
 
-    conda activate py37  
-**Optional TIP:** add this line to your .bashrc/.cshrc,....
+    conda activate py37
 
-4- Install rdkit and openbabel in py37 enviroment
+**Optional TIP:** add this line to your `.bashrc` / `.cshrc`.
+
+4 - Install rdkit and openbabel in py37 enviroment
 
     conda install -c rdkit rdkit
     conda install -c conda-forge openbabel
