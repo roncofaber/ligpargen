@@ -196,7 +196,7 @@ def _getBossCommand(workdir, checkrun):
       exit()
 
    logger.info(f'Running BOSS via Docker: {bossdir}')
-   return f'docker run --rm -v {abs_workdir}:/workspace -w /workspace {bossdir} csh run_boss.csh'
+   return f'docker run --rm -v {abs_workdir}:/workspace -w /workspace -e BOSSdir={internal_bossdir} {bossdir} csh run_boss.csh'
 
 
 def _generateWrapperScript(steps):

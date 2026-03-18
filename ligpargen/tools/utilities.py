@@ -84,11 +84,12 @@ def generateFolder(folderName):
 
     newfolderName = os.path.abspath(folderName)
 
-    if os.getcwd()!=newfolderName: 
+    if os.getcwd() != newfolderName:
 
-        if os.path.exists(newfolderName): shutil.rmtree(newfolderName, ignore_errors=True)
-        
-        os.makedirs(newfolderName)
+        if os.path.exists(newfolderName):
+            logger.warning(f'Output folder already exists and will be reused: {newfolderName}')
+
+        os.makedirs(newfolderName, exist_ok=True)
 
     return newfolderName
 
